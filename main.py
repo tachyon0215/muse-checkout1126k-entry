@@ -1,60 +1,71 @@
 #!/usr/bin/env python3
-"""Competition entry: 'The Self-Checkout Is Judging You'.
+"""Self-checkout entry for the make.fun contest 'The Self-Checkout Is Judging You'.
 
-Target competition: u-motasimfuad-the-self-checkout-is-judging-you-b71130d6
-on make.fun. The deliverable is a single line of text, written verbatim to
-entry.txt inside the directory named by MAKEFUN_OUTPUT_DIR (defaulting to
-/output when the variable is unset).
+Contest slug: u-motasimfuad-the-self-checkout-is-judging-you-b71130d6.
 
-Drafts considered:
-  A) "Unexpected item in bagging area - oh, it's just your dignity, next to
-      the ice cream and wine at 11pm."
-  B) "Please wait for assistance. I saw what you scanned as bananas. We both
-      know those are the expensive avocados."
-  C) "Scan complete. Given the energy drinks and frozen pizza, I have alerted
-      your mother and your doctor."
+What this script does is deliberately boring: it takes one frozen sentence,
+gives it a quick once-over, and drops it into a file called entry.txt inside
+whichever folder MAKEFUN_OUTPUT_DIR points at (falling back to /output).
+Nothing is fetched, randomised, or read from disk, so two runs always yield
+the same bytes.
 
-Draft B won: it borrows the machine's own stock phrase and turns it into an
-accusation about a specific, widely recognised bit of checkout cheating,
-whereas A leans on the overused bagging-area joke.
+How the sentence was picked
+---------------------------
+Three contenders were written out and scored against the judging notes in
+the contest RULES (instantly graspable on a first read, then surprise,
+economy, novelty, and how cleanly it reads aloud):
 
-The program is fully deterministic: a constant string, no I/O besides the
-output file, no network access, no randomness.
+  * the bagging-area dignity gag -- funny, but that joke is everywhere;
+  * the till's own 'please wait for assistance' announcement, repurposed
+    as a callout of the banana-versus-avocado barcode swap;
+  * a scan summary that tattles to the shopper's mother and doctor.
+
+The middle one took it. It keeps the machine's authentic phrasing and aims
+it at one precise, familiar fiddle instead of a generic checkout cliché.
 """
 
 import os
 from pathlib import Path
 
-# The submitted line, kept separate so it can be audited character by
-# character against the competition's winning text.
-LINE = "Please wait for assistance. I saw what you scanned as bananas. We both know those are the expensive avocados."
+# The sentence being entered, stored in a single spot so it can be checked
+# against the contest text without digging through the logic.
+JUDGEMENT = (
+    "Please wait for assistance. I saw what you scanned as bananas. "
+    "We both know those are the expensive avocados."
+)
 
-# The file payload consists of the line followed by a single trailing newline.
-TEXT = LINE + "\n"
+# What actually lands on disk: the sentence plus exactly one newline.
+PAYLOAD = JUDGEMENT + "\n"
 
-# Competition ceiling for the entry body, newline excluded.
-MAX_CHARS = 200
-
-
-def validate(text: str) -> None:
-    """Reject any payload that is not one clean line within the limit."""
-    body = text[:-1] if text.endswith("\n") else text
-    if not (1 <= len(body) <= MAX_CHARS):
-        raise ValueError("entry length out of range")
-    if not body.strip():
-        raise ValueError("entry must not be only whitespace")
-    if "\n" in body or "\r" in body:
-        raise ValueError("entry must be one line")
-    if body != body.strip() or "  " in body:
-        raise ValueError("no stray whitespace")
+# Hard cap on the sentence length set by the contest, newline not counted.
+CHARACTER_BUDGET = 200
 
 
-def main() -> None:
-    validate(TEXT)
-    out_dir = Path(os.environ.get("MAKEFUN_OUTPUT_DIR") or "/output")
-    out_dir.mkdir(parents=True, exist_ok=True)
-    (out_dir / "entry.txt").write_bytes(TEXT.encode("utf-8"))
+def sanity_check(payload: str) -> None:
+    """Raise if the payload is anything but a single tidy line."""
+    core = payload.removesuffix("\n")
+    problems = []
+    if not 1 <= len(core) <= CHARACTER_BUDGET:
+        problems.append("length falls outside the allowed range")
+    if not core.strip():
+        problems.append("nothing but whitespace")
+    if "\n" in core or "\r" in core:
+        problems.append("spans more than one line")
+    if core != core.strip() or "  " in core:
+        problems.append("ragged spacing")
+    if problems:
+        raise ValueError("; ".join(problems))
+
+
+def emit() -> Path:
+    """Validate the payload and write it out, returning the file path."""
+    sanity_check(PAYLOAD)
+    destination = Path(os.environ.get("MAKEFUN_OUTPUT_DIR") or "/output")
+    destination.mkdir(parents=True, exist_ok=True)
+    target = destination / "entry.txt"
+    target.write_bytes(PAYLOAD.encode("utf-8"))
+    return target
 
 
 if __name__ == "__main__":
-    main()
+    emit()
