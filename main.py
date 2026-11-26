@@ -25,7 +25,7 @@ output file, no network access, no randomness.
 import os
 from pathlib import Path
 
-# The submitted line, kept on its own so it is easy to audit character by
+# The submitted line, kept separate so it can be audited character by
 # character against the competition's winning text.
 LINE = "Please wait for assistance. I saw what you scanned as bananas. We both know those are the expensive avocados."
 
